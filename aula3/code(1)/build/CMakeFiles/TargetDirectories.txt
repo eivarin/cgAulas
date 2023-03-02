@@ -1,0 +1,3 @@
+/home/grk/cg/aula3/code(1)/build/CMakeFiles/class3.dir
+/home/grk/cg/aula3/code(1)/build/CMakeFiles/edit_cache.dir
+/home/grk/cg/aula3/code(1)/build/CMakeFiles/rebuild_cache.dir
