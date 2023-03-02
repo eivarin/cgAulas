@@ -7,6 +7,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <iostream>
+
 void changeSize(int w, int h) {
 
 	// Prevent a divide by zero, when window is too short
@@ -32,7 +34,7 @@ void changeSize(int w, int h) {
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void drawCylinder(float radius, float height, int slices) {
+void drawCylinder(float radius, float height, int slices, float px, float py, float pz) {
 	float aCil = 0;
 	float rotation = (2 * M_PI);
 	float delta = rotation / slices;
@@ -41,10 +43,10 @@ void drawCylinder(float radius, float height, int slices) {
 	glBegin(GL_TRIANGLES);
 	while (aCil <= rotation) {
 		glColor3f(1.0f,0.0f,0.0f);
-		float px1 = radius * sin(aCil), py1 = radius * cos(aCil);
-		float px2 = radius * sin(aCil+delta), py2 = radius * cos(aCil+delta);
+		float px1 = px + (radius * sin(aCil)), py1 = pz + (radius * cos(aCil));
+		float px2 = px + (radius * sin(aCil+delta)), py2 = pz + (radius * cos(aCil+delta));
 		
-		glVertex3f(0.0f, height, 0.0f);
+		glVertex3f(px, height, pz);
 		glVertex3f(px1, height, py1);
 		glVertex3f(px2, height, py2);
 		
@@ -57,7 +59,7 @@ void drawCylinder(float radius, float height, int slices) {
 		glVertex3f(px2, -height, py2);
 		glVertex3f(px2, height, py2);
 
-		glVertex3f(0.0f, -height, 0.0f);
+		glVertex3f(px, -height, pz);
 		glVertex3f(px2, -height, py2);
 		glVertex3f(px1, -height, py1);
 		aCil+=delta;
@@ -68,12 +70,24 @@ void drawCylinder(float radius, float height, int slices) {
 int ai = 0;
 int bi = 0;
 int steps = 16;
-float r = 5.0f;
+float r = 1.0f;
+
+float dx = 0.0f;
+float dy = 0.0f;
+float dz = 0.0f;
 
 float px = 0.0f;
 float py = 0.0f;
-float pz = 0.0f;
+float pz = -5.0f;
 
+void recalcDirection(){
+	float step = (M_PI / (steps*2));
+	float a = ai * step;
+	float b = bi * step;
+	dx = r * cos(b) * sin(a);
+	dy = r * sin(b);
+	dz = r * cos(b) * cos(a);
+}
 
 void renderScene(void) {
 
@@ -82,14 +96,12 @@ void renderScene(void) {
 
 	// set the camera
 	glLoadIdentity();
-	float step = (M_PI / (steps*2));
-	float a = ai * step;
-	float b = bi * step;
-	gluLookAt(px, py, pz, 
-		      r * cos(b) * sin(a),r * sin(b),r * cos(b) * cos(a),
+	gluLookAt(px,py,pz,
+		      px + dx,py + dy,pz + dz,
 			  0.0f,1.0f,0.0f);
 
-	drawCylinder(1,2,10);
+	drawCylinder(1,2,10, -2.0f, 0.0f, 0.0f);
+	drawCylinder(1,2,10, 2.0f, 0.0f, 0.0f);
 
 	// End of frame
 	glutSwapBuffers();
@@ -97,6 +109,7 @@ void renderScene(void) {
 
 
 void processKeys(unsigned char c, int xx, int yy) {
+	bool changed = true;
 	switch (c)
 	{
 	case 'w':
@@ -107,16 +120,18 @@ void processKeys(unsigned char c, int xx, int yy) {
 		break;
 
 	case 'a':
-		ai -= 1;
+		ai += 1;
 		break;
 
 	case 'd':
-		ai += 1;
+		ai -= 1;
 		break;
 	
 	default:
+		changed = false;
 		break;
 	}
+	if (changed) recalcDirection();
 	glutPostRedisplay();
 }
 
@@ -125,18 +140,25 @@ void processSpecialKeys(int key, int xx, int yy) {
 	switch (key)
 	{
 	case GLUT_KEY_UP:
-		pz += 1; 
-		break;
-	case GLUT_KEY_DOWN:
-		pz -= 1; 
+		px += dx;
+		py += dy;
+		pz += dz;
 		break;
 
-	case GLUT_KEY_LEFT:
-		px -= 1;
+	case GLUT_KEY_DOWN:
+		px -= dx;
+		py -= dy;
+		pz -= dz; 
 		break;
 
 	case GLUT_KEY_RIGHT:
-		px += 1;
+		px += -dz;
+		pz += dx;
+		break;
+
+	case GLUT_KEY_LEFT:
+		px -= -dz;
+		pz -= dx;
 		break;
 	
 	default:
@@ -154,7 +176,7 @@ int main(int argc, char **argv) {
 	glutInitWindowPosition(100,100);
 	glutInitWindowSize(800,800);
 	glutCreateWindow("CG@DI-UM");
-		
+	recalcDirection();
 // Required callback registry 
 	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
